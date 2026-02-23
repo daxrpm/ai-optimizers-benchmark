@@ -1,0 +1,594 @@
+---
+alwaysApply: true
+---
+
+context: 
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+%Template version as of 6/27/2024
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{tabularx}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\begin{document}
+
+\title{Toward Computationally Efficient AI: A Comparative Study of Optimization Paradigms in CNN Training\\
+
+%\author{\IEEEauthorblockN{1\textsuperscript{st} Given Name Surname}
+%\IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
+%\textit{name of organization (of Aff.)}\\
+%City, Country \\
+%email address or ORCID}
+%\and
+%\IEEEauthorblockN{2\textsuperscript{nd} Given Name Surname}
+%\IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
+%\textit{name of organization (of Aff.)}\\
+%City, Country \\
+%email address or ORCID}
+%\and
+%\IEEEauthorblockN{3\textsuperscript{rd} Given Name Surname}
+%\IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
+%\textit{name of organization (of Aff.)}\\
+%City, Country \\
+%email address or ORCID}
+%\and
+%\IEEEauthorblockN{4\textsuperscript{th} Given Name Surname}
+%\IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
+%\textit{name of organization (of Aff.)}\\
+%City, Country \\
+%email address or ORCID}
+%\and
+%\IEEEauthorblockN{5\textsuperscript{th} Given Name Surname}
+%\IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
+%\textit{name of organization (of Aff.)}\\
+%City, Country \\
+%email address or ORCID}
+%\and
+%\IEEEauthorblockN{6\textsuperscript{th} Given Name Surname}
+%\IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
+%\textit{name of organization (of Aff.)}\\
+%City, Country \\
+%email address or ORCID}
+}
+
+\maketitle
+
+\begin{abstract}
+%However, access to high-performance computational infrastructure is usually unequal across academic institutions and organizations.
+The rapid expansion of artificial intelligence (AI) has significantly increased the computational demands associated with training advanced models. Moreover, the use of inefficient training techniques not only raises operational costs but also contributes to unnecessary energy consumption and environmental impact. Therefore, identifying scalable and resource-efficient optimization strategies is critical to enhancing the accessibility, affordability, and sustainability of AI-driven digital services. Despite the proliferation of optimization paradigms for AI, existing evidence remains fragmented, offering limited practical guidance on their trade-offs in terms of accuracy, convergence time, and computational cost. To address this gap, this study presents a comprehensive comparative evaluation of optimization paradigms applied to Convolutional Neural Networks (\textit{CNNs}), which are widely used to process data with a grid-like topology, such as images and videos. We evaluate representative first-order and second-order methods, including Adam, Kronecker-Factored Approximate Curvature (K-FAC), and the recently proposed AdaMuon optimizer. Our analysis combines mathematical characterization with empirical evaluation across multiple datasets, measuring predictive accuracy, convergence speed, computational overhead, and memory consumption. The results indicate that, while K-FAC achieves competitive accuracy, it incurs substantial computational and memory overhead. AdaMuon, on the contrary, maintains a near first-order computational cost while delivering an improved efficiency–accuracy balance. In single-GPU settings, AdaMuon demonstrates a more favorable trade-off between performance and resource consumption, whereas K-FAC remains constrained by scalability limitations. In this context, Adam provides a robust and scalable baseline in single-GPU environments, exhibits strong empirical convergence speed and stable optimization dynamics due to its adaptive per-parameter learning rates and moment-based updates, achieving competitive accuracy with moderate computational overhead. These findings provide initial guidance for selecting optimization strategies that balance accuracy, convergence speed, and computational efficiency in CNN applications, supporting more sustainable and cost-effective AI deployment.
+
+
+\end{abstract}
+
+\begin{IEEEkeywords}
+Computational Efficiency, Convolutional Neural Networks, Optimization Paradigms,  Sustainability
+\end{IEEEkeywords}
+
+\section {Introduction}
+
+During the last years, AI has rapidly expanded across the globe and has become deeply integrated into multiple industries, academic fields, and daily life. In healthcare, its presence is significant. In the US, the number of AI-enabled medical devices approved by the FDA rose from just six in 2015 to 233 in 2023, reflecting a significant acceleration in their acceptance. Similarly, in Germany, AI has achieved an adoption rate of over 50\% within the medical field \cite{maslej2025, patel2025}.
+
+Beyond healthcare, AI has also influenced the transportation sector. The self-driving car business is no longer limited to experimentation. For instance, Waymo, a major autonomous taxi service provider, now completes approximately 150,000 rides per week. In scientific research, AI continues to expand the limits of innovation generating successful protein binders through AlphaProteo, and even contributing to biomedical research by becoming AI-powered scientists themselves \cite{maslej2025}.
+
+The impact of AI is also evident in agriculture. Thanks to its advanced monitoring and precision farming capabilities, it has become a critical tool for improving efficiency and productivity. This is reflected in the high adoption rates in countries such as China and India, where AI usage in agriculture reaches 51.40\% and 50.93\%, respectively \cite{patel2025}. 
+
+Together, these developments show that AI has moved from being an emerging technology to becoming a central part of today’s economy and scientific research. In this context of widespread use, Convolutional Neural Networks (CNNs) have become essential tools for image classification across a wide range of domains, including engineering, security, medical testing, military applications, and deepfake detection \cite{alrajeh2025,chen2021,elngar2021}. Additionally, although to a lesser extent, CNNs have also been applied in other areas, offering valuable insights in fields such as natural language processing, audio analysis, and time-series forecasting (e.g., market prediction) \cite{ersavas2024}. 
+
+AI models are becoming increasingly demanding and energy-intensive. For instance, the training compute required for large-scale AI models doubles approximately every five months, along with a significant rise in annual power consumption\cite{maslej2025}. Despite their versatility and effectiveness, Convolutional Neural Networks (CNNs) raise concerns regarding environmental sustainability, as they are inherently computationally expensive \cite{alrajeh2025}.
+
+In this context, improving training efficiency becomes not only a performance objective but also a sustainability goal. Optimization plays an essential role for an effective CNN training; however, first-order methods such as Stochastic Gradient Descent (SGD) and Adaptive Moment Estimation (Adam) have key limitations, motivating the exploration of second-order optimizers for improved convergence and generalization \cite{Dubey2019,Reyad2023,Habib2020,Gasse2019,Cong2022}.
+
+Optimization determines how efficiently and accurately CNN learn from data. The high dimensionality and non-convexity of CNN loss landscapes make optimization a central challenge, directly impacting convergence speed, final accuracy, and generalization to new data. Optimization is a cornerstone of CNN training. While first-order methods like SGD and Adam are widely used, their limitations in convergence speed, generalization, and sensitivity to hyperparameters justify the exploration of second-order optimizers, which can offer more efficient and robust training for complex neural architectures \cite{Dubey2019,Reyad2023,Habib2020,Gasse2019,Cong2022}. 
+    
+As shown in Table~\ref{tab:comparison}, first- and second-order optimization methods present different strengths and limitations in CNN training \cite{Dubey2019,Reyad2023,Habib2020,Gasse2019,Cong2022}. This paper focuses on evaluating the efficiency of two optimization second-order methods for CNN, AdaMuon \cite{kingma2014} and K-FAC \cite{martens2015}, with the goal of understanding how their performance can be extrapolated to image classification tasks.
+
+\begin{table}[htbp]
+\caption{Comparison of First- and Second-Order Optimization Methods}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{|c|c|p{3.2cm}|}
+\hline
+\textbf{Method} & \textbf{Evidence} & \textbf{Reasoning} \\
+\hline
+First-order 
+& Strong 
+& SGD/Adam struggle with complex loss surfaces and require careful tuning. \\
+\hline
+Second-order
+& Moderate 
+& Curvature information enables faster and more robust convergence. \\
+\hline
+\end{tabular}
+\label{tab:comparison}
+\end{table}
+ 
+The remainder of this paper is structured as follows. The Introduction establishes the theoretical background, formulates the research problem, and outlines the study’s motivation. The Methodology section describes the analytical framework, including the theoretical foundations, mathematical derivations, and comparative procedures employed. The Results section presents the empirical findings and quantitative evaluations. These findings are then examined in the Discussion, where their implications and limitations are critically assessed and interpreted, while also providing potential directions for future work. The paper concludes with a summary of the main contributions.
+
+\section{Related Concepts}
+
+This section outlines the foundational ideas and techniques necessary to understand the research. It begins with core mathematical tools such as Cross Entropy, Softmax Function, and Gradient Derivation, followed by advanced optimization methods including the Fisher Matrix, K-FAC Method, and the Kronecker Product. It then details the Adam Algorithm, breaking it down into key components like moment estimates, bias corrections, parameter update rules, and conceptual interpretation. Finally, it introduces AdaMuon, a second-order optimization method, along with its main elements such as adaptive moments, sign-stabilization, block-wise orthogonalization, and adaptive step strategies, highlighting computational cost considerations. Together, these concepts provide the theoretical and algorithmic background that supports the study of optimization in the field.
+\subsection{Cross-Entropy}
+Let q(c) be a true probability distribution defined over a set of classes {1, 2, …, C}, and let p(c) be the distribution predicted by a parameterized model. The cross-entropy is defined as \cite{martens2015}.
+
+\begin{equation}
+H(q, p) = - \sum_{c=1}^{C} q(c) \, \log p(c)
+\end{equation}
+
+The expression above quantifies the expected amount of information required to identify a class under the true distribution $q$ when using the optimal code derived from the predicted distribution $p$. In practice, when labeled data are available, the distribution q takes the form of a one-hot vector \cite{martens2015}.
+    
+This shows that the training cost depends entirely on the probability assigned to the true class. If the model assigns a high probability to the correct class, the loss is low; otherwise, the penalty is high. This property explains the practical effectiveness of cross-entropy as a learning criterion \cite{martens2015}.
+
+    \subsection{Softmax Function}
+The distribution $p(c)$ is not defined arbitrarily, but is obtained from a transformation of the so-called logits 
+$z_c$, which constitutes the linear outputs of the neural network’s final layer. The softmax function ensures that the resulting distribution is valid, meaning that it has positive, normalized values \cite{martens2015}.
+    
+This formulation ensures that the values $p(c)$ form a probability distribution over the set of classes, transforming an arbitrary vector of real numbers into a vector of non-negative values whose sum equals one.
+\subsection{Gradient Derivation}
+Training a model through optimization requires computing the gradient of the loss function with respect to the parameters. The first step is to derive the loss with respect to the logits. Starting from the definition \cite{martens2015,kaul2022}
+        \begin{equation}
+        \mathcal{L} = - \sum_{c=1}^{C} q(c) \log p(c)
+    \end{equation}
+    
+        by applying the chain rule to the softmax function, the fundamental result can be obtained:
+    \begin{equation}
+        \frac{\partial \mathcal{L}}{\partial z_k} = p(k) - q(k).
+    \end{equation}
+    
+        This result has a straightforward interpretation: if $k$ corresponds to the true class, then $q(k)=1$ and the gradient is $p(k)-1$, which drives the model to increase the probability of that class. Alternatively, for the non-true classes, the gradient reduces to $p(k)$, which tends to decrease the probability assigned to those categories. This simple structure of the gradient greatly facilitates both theoretical analysis and practical implementation in optimization algorithms \cite{martens2015,kaul2022} .
+\subsection{Fisher Matrix and K-FAC Method.}
+Optimizing deep neural networks cannot rely solely on the direct gradient. Second-order methods, which incorporate curvature information of the loss function, such as those based on the Fisher matrix, provide substantial improvements. The Fisher matrix, defined as the expected outer product of the gradient of the log-likelihood, encodes information about the geometry of the parameter space \cite{martens2015}:
+\begin{equation}
+F = \mathbb{E} \Big[ \nabla_\theta \log p(y \mid x; \theta) \, \nabla_\theta \log p(y \mid x; \theta)^\top \Big]
+\end{equation}
+
+     However, the exact computation and storage of $F$ becomes infeasible for large-scale models due to its size. To address this obstacle, an approximation based on Kronecker-factorization is employed, giving rise to the method known as Kronecker-Factored Approximate Curvature (K-FAC) \cite{martens2015}.
+
+\subsection{Kronecker Product.}
+The product between two matrices $A \in \mathbb{R}^{m \times n}, \quad B \in \mathbb{R}^{p \times q}$ is defined as:
+\begin{equation}
+    A \otimes B =
+\begin{bmatrix}
+a_{11} B & a_{12} B & \cdots & a_{1n} B \\
+a_{21} B & a_{22} B & \cdots & a_{2n} B \\
+\vdots & \vdots & \ddots & \vdots \\
+a_{m1} B & a_{m2} B & \cdots & a_{mn} B
+\end{bmatrix}
+\end{equation}
+
+    The K-FAC method approximates the Fisher matrix of neural network layers as a Kronecker product of two smaller matrices (input activations and output gradients). This structured decomposition greatly lowers computational and storage costs while preserving a good curvature approximation \cite{martens2015}.
+    
+\subsection{Adam Algorithm.}
+Adam is a widely used stochastic optimization algorithm for neural networks. It combines momentum with adaptive learning rates, using estimates of the first- and second-order moments of the gradient to update the model parameters efficiently. Let $\theta \in \mathbb{R}^{d} $be the model parameters and$ L(\theta)$ the loss function to minimize. At each iteration $t$, a stochastic gradient estimate is computed on a minibatch of data \cite{Reyad2023}:
+
+    \begin{equation}
+        g_t = \nabla_\theta L(\theta_t)
+    \end{equation}
+
+\subsubsection{Moment Estimates.}
+Adam maintains two moving averages of gradients \cite{Reyad2023}:
+
+    \begin{equation}
+        m_t = \beta_1 m_{t-1} + (1 - \beta_1) g_t, 
+\quad
+v_t = \beta_2 v_{t-1} + (1 - \beta_2) g_t^2 \label{eq: ADAM_EQ_GRAD}
+    \end{equation}
+\subsubsection{Bias Corrections.}
+Since $m_t$ and $v_t$ are initialized at zero, bias corrections are applied \cite{Reyad2023}:
+    \begin{equation}
+\hat{m}_t = \frac{m_t}{1 - \beta_1^t}, 
+\quad
+\hat{v}_t = \frac{v_t}{1 - \beta_2^t}
+    \end{equation}
+\subsubsection{Parameter update rule.}
+Parameters are updated via:
+ \begin{equation}
+     \theta_{t+1} = \theta_t - \alpha \frac{\hat{m}_t}{\sqrt{\hat{v}_t} + \epsilon}
+ \end{equation}
+ where $\alpha > 0$ is the learning rate and $\epsilon>0$ ensures numerical stability.
+\subsubsection{Conceptual Interpretation}
+ $\hat{m}_t$ acts as a smoothed gradient, reducing stochastic variance like momentum. $\hat{v}_t$ adapts the step size inversely to gradient magnitude: coordinates with large gradients take smaller steps, while those with small gradients take larger steps \cite{Reyad2023}.
+ 
+ \subsection{Derivation for a Linear/Unfolded Convolutional Layer.} Consider a layer with weight parameters $W \in \mathbb{R}^{d_{\text{out}} \times d_{\text{in}}}$ \cite{martens2015,kaul2022} . 
+For a given example $(x, y)$, the per-example gradient satisfies
+\begin{equation}
+\nabla_W \ell = \delta \, a^\top,
+\end{equation}
+    where $a \in \mathbb{R}^{d_{\text{in}}}$ are the input activations and 
+$\delta \in \mathbb{R}^{d_{\text{out}}}$ are the backpropagated errors 
+with respect to the pre-activations \cite{martens2015}.
+
+    Vectorizing, we obtain
+\begin{equation}
+\text{vec}(\nabla_W \ell) = a \otimes \delta.
+\end{equation}
+
+    Hence, the Fisher block associated with $W$ is
+\begin{equation}
+F_W = \mathbb{E}\!\left[ \, \text{vec}(\nabla_W \ell)\,
+   \text{vec}(\nabla_W \ell)^\top \right]
+   = \mathbb{E}\!\left[ (aa^\top) \otimes (\delta \delta^\top) \right].
+\end{equation}
+
+    The K-FAC approximation takes
+\begin{equation}
+F_W \;\approx\; A \otimes G, 
+\quad A := \mathbb{E}[aa^\top], 
+\quad G := \mathbb{E}[\delta \delta^\top].
+\end{equation}
+
+    In the convolutional case, patch re-indexing is applied and the expectations 
+are averaged over spatial locations and the batch. This preserves the same Kronecker structure $A \otimes G$ with $d_{\text{in}} = C_{\text{in}} k_h k_w$ \cite{Reyad2023} \cite{martens2015}.
+
+\subsection{Inversion and Update by layer.}
+Using the property $(A \otimes G)^{-1} = A^{-1} \otimes G^{-1}$, the approximate natural 
+gradient update for $W$ is 
+\begin{equation}
+\text{vec}(\Delta W) = -\eta \, (A \otimes G)^{-1} \, \text{vec}(\nabla_W L) 
+= -\eta \, (A^{-1} \otimes G^{-1}) \, \text{vec}(\nabla_W L).
+\end{equation}
+
+    Its equivalent in matrix form:
+\begin{equation}
+\Delta W \;\approx\; -\eta \, G^{-1} \, \nabla_W L \, A^{-1}.
+\end{equation}
+
+\subsection{Damping and Practice.}
+For stability, factorized damping variants are used \cite{martens2015}:
+\begin{equation}
+\tilde{A} = A + \pi \sqrt{\lambda}\, I, 
+\qquad \tilde{G} = G + \tfrac{1}{\pi}\sqrt{\lambda}\, I,
+\end{equation}
+
+    with $\pi$ chosen to match scales (e.g., 
+$\pi = \sqrt{ \tfrac{\mathrm{tr}(A)/d_{\text{in}}}{\mathrm{tr}(G)/d_{\text{out}}} }$). Inversion of $\tilde{A}, \tilde{G}$ can be performed via Cholesky decomposition.
+
+\subsection{Algorithmic Complexity (Symbolic).}
+For a layer with dimensions $(d_{\text{in}}, d_{\text{out}})$ and an effective minibatch size $N$ 
+(for convolution, $N = m|U|$), the cost of constructing the estimators is \cite{martens2015}
+\begin{equation}
+\text{cost}(A) \sim \mathcal{O}(N d_{\text{in}}^2), 
+\qquad 
+\text{cost}(G) \sim \mathcal{O}(N d_{\text{out}}^2).
+\end{equation}
+
+    The inversion (factorization) of $\tilde{A}, \tilde{G}$ costs
+\begin{equation}
+\text{cost}_{\text{inv}} \sim \mathcal{O}(d_{\text{in}}^3 + d_{\text{out}}^3),
+\end{equation}
+
+    and the application of the preconditioner 
+(product $G^{-1} \nabla_W L A^{-1}$) costs approximately
+$\mathcal{O}(d_{\text{in}} d_{\text{out}} (d_{\text{in}} + d_{\text{out}})).$
+    In practice, the inversion is amortized every $T_{\text{inv}}$ iterations.
+
+\subsection{AdaMuon.}
+Let $g_t$ denote the gradient (per parameter) at step $t$. 
+All operations are per element (vectorized over parameters), 
+except where block operations are explicitly indicated.
+\subsubsection{Adaptive Moments.} AdaMuon maintains two elementary moments (as in Adam) \cite{si2025,Reyad2023}. However, AdaMuon's approach differs to what Adam specifes in \eqref{eq: ADAM_EQ_GRAD}. In this scenario, these operations are carried within the context of information geometry; thus, the steps taken are adapted based on the informational space.
+
+\subsubsection{Sign-stabilization of the Momentum.} AdaMuon applies a sign transformation to the momentum (element by element) \cite{si2025}, 
+which can be written generically as
+\begin{equation}
+\tilde{m}_t = \text{sign}(m_t) \odot f(|m_t|),
+\end{equation}
+
+    where $f$ is a monotonic function (for example $f(s) = s^\alpha$ with $\alpha \in (0,1]$) that attenuates very small components. In the basic variant, $f(s) = s$, and only of $f$$\text{sign}(m_t)$ is used in practical combinations. This step reduces sensitivity to small oscillations while preserving the dominant  direction per element.
+\subsubsection{Block-wise Orthogonalization.} Define a partition of the parameters into blocks $\{B_j\}$ (e.g., by layer). 
+Let $u_{t,j}$ be the vector formed by the coordinates of $\tilde{m}_t$ in block $B_j$. 
+AdaMuon applies a lightweight orthogonalization on $u_{t,j}$, producing 
+$u^{\perp}_{t,j}$ — conceptually a projection that removes redundant components within 
+the block and reduces collinearity among update dimensions \cite{si2025}.
+
+A practical (and efficient) routine is \cite{si2025}:
+
+    \begin{enumerate}
+        \item Normalize 
+        $u_{t,j} \leftarrow \frac{u_{t,j}}{\|u_{t,j}\|} 
+        \quad \text{if } \|u_{t,j}\| \neq 0.$
+        \item Project out historical subspaces $S_{t-1,j}$ 
+        (e.g., historical means or principal directions):
+        $u^{\perp}_{t,j} = u_{t,j} - P_{S_{t-1,j}}(u_{t,j}).$
+    \end{enumerate}
+
+    Let $\text{ortho}(\cdot)$ denote the operation which produces $u^{\perp}_{t,j}$. The efficient version described in the preprint has complexity $\mathcal{O}(|B_j|^2)$ per block (not quadratic in the dimension of the global parameter $P$).
+
+\subsubsection{Adaptive Step and RMS-Aligned Rescaling.}
+After orthogonalization, AdaMuon forms the adapted direction per component \cite{si2025}:
+\[
+\hat{d}_t = \frac{u_t^\perp}{\sqrt{v_t + \varepsilon}},
+\]
+
+    where $u_t^\perp$ is the vector formed by concatenated blocks $u_{t,j}^\perp$, and $\varepsilon > 0$ prevents division by zero.
+
+    Finally, a rescaling is applied so that the RMS of $\hat{d}_t$ matches a reference (e.g., the RMS that Adam would give without orthogonalization). Let
+\[
+\text{rms}(x) := \sqrt{\frac{1}{P} \sum_{i=1}^{P} x_i^2}.
+\]
+
+    The following expression can be defined
+\[
+\Delta_t = -\eta \frac{\text{rms}_{\text{ref}}}{\text{rms}(\hat{d}_t) + \delta} \, \hat{d}_t,
+\]
+
+    where $\text{rms}_{\text{ref}}$ is chosen (online) so that the step magnitude is comparable to Adam under similar conditions. The effect is that AdaMuon modifies the direction (orthogonal) but maintains a practical step scale \cite{si2025}.
+\subsection{Computational Cost per Step (Summary)}
+
+\begin{itemize}
+    \item Computation of $m_t, v_t$: $O(P)$ (element-wise, very cheap).  
+    \item Sign-stabilization: $O(P)$.  
+    \item Block-wise orthogonalization: $\sum_j O(|B_j|^2)$; if the blocks are layers with sizes $b_j$, cost $\sum_j b_j^2$.  
+    \item RMS scaling and update: $O(P)$.
+\end{itemize}
+
+Comparing this structure with K-FAC: AdaMuon avoids cubic inversions per block at the cost of a quadratic orthogonalization per block.
+
+
+\section{Method}
+This section focuses on analyzing and comparing the computational efficiency of optimization techniques. It includes a Comparative Cost Analysis, where both symbolic synthesis and representative numerical examples are used to examine the formal and practical implications of the methods, followed by a practical interpretation of their performance. Additionally, it explores Efficiency per Step in terms of loss progress, introducing a modeling approach for the parameter, which helps quantify and evaluate how effectively each optimization method advances toward convergence. Together, these components provide a rigorous framework for assessing both the theoretical cost and practical efficiency of the algorithms under study.
+\subsection{Comparative Cost Analysis: Formulas and numeric cost}
+\subsubsection*{Symbolic Synthesis.}
+
+For a layered network $l = 1, \dots, L$, defined by layer dimensions $(d^{(l)}_{\text{in}}, d^{(l)}_{\text{out}})$ and blocks in AdaMuon with sizes $b^{(l)} = d^{(l)}_{\text{in}} d^{(l)}_{\text{out}}$ (or a finer partition), the following measures of computational cost per iteration (asymptotic FLOPs) are considered:
+
+\textbf{K-FAC:} Building $A_l, G_l$ costs $O\big(N (d^{(l)}_{\text{in}})^2 + N (d^{(l)}_{\text{out}})^2 \big)$; inversion costs $O\big( (d^{(l)}_{\text{in}})^3 + (d^{(l)}_{\text{out}})^3 \big)$ (every $T_{\text{inv}}$ iterations). The amortized cost per iteration of the inversion is  
+\[
+\frac{1}{T_{\text{inv}}} O(d_{\text{in}}^3 + d_{\text{out}}^3).
+\]
+
+\textbf{AdaMuon:} The computational cost of block-wise orthogonalization depends on the scope of application. Full block space orthogonalization costs $O\!\left((b^{(l)})^2\right)$, while restricting it to output dimension vectors reduces the cost to $O(d_{\text{out}}^2 \cdot d_{\text{in}})$. In practice, the method applies orthogonalization at the layer level over the parameter vector.
+ 
+\[
+\sum_l (b^{(l)})^2.
+\]
+
+\subsubsection{Representative Numerical Example.}
+
+Consider a simple and representative example: a dense layer with $d_{\text{in}} = 1024$, $d_{\text{out}} = 1024$. By calculating the basic quantities one can obtain:
+    \[
+    d_{\text{in}}^2 = 1024^2 = 1{,}048{,}576, \quad d_{\text{in}}^3 = 1024^3 = 1{,}073{,}741{,}824.
+    \]  
+    
+    Therefore,
+    \[
+    d_{\text{in}}^3 + d_{\text{out}}^3 = 2 \times 1{,}073{,}741{,}824 = 2{,}147{,}483{,}648,
+    \]  
+    
+    while
+    \[
+    d_{\text{in}}^2 + d_{\text{out}}^2 = 2 \times 1{,}048{,}576 = 2{,}097{,}152.
+    \]  
+    
+    The ratio between the amortized cubic cost and the quadratic cost is
+    \[
+    \frac{d_{\text{in}}^3 + d_{\text{out}}^3}{d_{\text{in}}^2 + d_{\text{out}}^2} 
+    \approx \frac{2.147 \times 10^9}{2.098 \times 10^6} \approx 1024.
+    \]  
+    
+    That is, for this layer, direct (cubic) inversion costs roughly $10^3$ times more FLOPs than forming the Gram matrices (the quadratic terms). This illustrates the enormous difference between cubic and quadratic costs for layers of dimension $\sim 1000$.
+    
+\subsection{Practical Interpretation}
+\begin{itemize}
+    \item K-FAC occasionally pays the cost of $O(d^3)$ per layer to invert $\tilde{A}, \tilde{G}$. Even when amortized, this remains expensive for very large layers (such as large fully-connected layers).
+    \item AdaMuon, by avoiding cubic inversions, replaces this cost with block-wise orthogonalization (typically costing $O(b^2)$ per block). If the blocks are much smaller than $d^3$ (e.g., $b \sim d$ and applied per filter), AdaMuon will be much cheaper per iteration.
+\end{itemize}
+
+
+\subsection{Implementation Details}
+Experiments were conducted on the Oxford–IIIT Pet dataset (binary classification: cat vs.\ dog) using the official train/val/test splits. Species codes were mapped to binary labels, and a stratified $90/10$ split of the trainval partition was used for validation. Images were preprocessed with standard \texttt{torchvision} transforms: random resized crops to $224\times224$, horizontal flips, and mild color jitter for training; resize/center-crop for evaluation; and normalization with ImageNet statistics.
+
+\paragraph{Backbone and training loop.}
+A pretrained \textbf{ResNet-18} with two-logit head (\texttt{cat}, \texttt{dog}) was fine-tuned. Training employed PyTorch with AMP on a single NVIDIA A100~40GB. Per-iteration timings (forward/backward/optimizer), per-epoch validation metrics, and GPU memory were logged. Safeguards against OOM included cache clears and batch-size fallback.
+
+\paragraph{Data loading.}
+Mini-batches were drawn with a weighted sampler to mitigate class imbalance. Unless fallback was triggered, the batch size was 256 with pinned memory and persistent workers.
+
+\paragraph{Optimizers and hyperparameters.}
+Baselines were \textbf{SGD+momentum} and \textbf{AdamW}; second-order methods were \textbf{K-FAC} and \textbf{AdaMuon}. Cosine scheduling was applied for 50 epochs with three seeds.
+\begin{itemize}
+    \item \textbf{SGD}: lr $0.1$, momentum $0.9$, weight decay $5\times10^{-4}$.
+    \item \textbf{AdamW}: lr $3\times10^{-4}$, $(\beta_1,\beta_2)=(0.9,0.999)$, $\epsilon=10^{-8}$, weight decay $5\times10^{-4}$.
+    \item \textbf{K-FAC}: Kronecker factors $A,G$ with EMA ($0.95$), damping $\lambda=10^{-3}$, inverse updates every $T_{\text{inv}}\!\in\!\{10,25\}$ via Cholesky with eig/SVD fallback, bias augmentation, and first-order updates for non-covered modules. Learning rate $0.02$.
+    \item \textbf{AdaMuon}: Adaptive moments with sign stabilization, block-wise orthogonalization ($n_s\!\in\{1,2\}$), RMS-aligned rescaling, and weight decay; lr $3\times10^{-4}$, $(\beta_1,\beta_2)=(0.9,0.999)$, $\epsilon=10^{-8}$.
+\end{itemize}
+
+\subsection{Quantitative Comparisons}
+
+\paragraph{Peak memory (Fig~\ref{fig:optimizer_vs_memory_usage}).}
+K-FAC required the largest footprint ($24.46\pm4.9$\,GB), reflecting storage and inversion of Kronecker factors. AdaMuon reduced this to $14.0\pm1.2$\,GB by replacing cubic inversions with block-wise orthogonalization and RMS alignment. SGD and AdamW remained near $3.5$–$3.6$\,GB.
+
+\paragraph{Memory dynamics (Fig~\ref{fig:optimizer_vs_gpu}).}
+Memory usage stabilized after warm-up. K-FAC maintained the highest plateau; AdaMuon remained flat at mid-level; SGD/AdamW achieved the lowest and most stable curves.
+
+\paragraph{Per-iteration time (Fig~\ref{fig:optimizer_vs_time}).}
+K-FAC incurred substantial forward cost ($123.6$\,ms) due to factor construction, plus optimizer overhead ($33.0$\,ms). AdaMuon kept forward/backward near first-order levels ($\sim$6–8\,ms) but required $104.3$\,ms in the optimizer step. SGD/AdamW were fastest overall ($\sim$82–83\,ms).
+
+\paragraph{Memory--accuracy frontier (Fig~\ref{fig:optimizer_vs_accuracy}).}
+AdamW and AdaMuon occupied the Pareto frontier, delivering near-ceiling accuracy with low (AdamW) or moderate (AdaMuon) memory. K-FAC reached comparable best accuracy but at substantially higher memory cost. SGD offered minimal memory but markedly lower accuracy.
+
+\paragraph{Learning curves (Fig~\ref{fig:epoch_vs_accuracy}).}
+AdamW converged within a few epochs (best $1.0000$, final $\approx 0.9940\pm0.0042$). AdaMuon stabilized slightly later with comparable accuracy (final $\approx 0.9926\pm0.0061$). K-FAC peaked early but displayed variability tied to damping and inversion cadence (final $\approx 0.9579\pm0.0460$). SGD peaked early then degraded.
+
+% ----------------- Figures -----------------
+% --- Grid de figuras con numeración independiente ---
+\begin{figure}[H]
+  \centering
+
+  % ---------- Fila 1 ----------
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{optimizer_vs_memory_usage.png}
+    \captionof{figure}{Peak GPU memory (mean$\pm$std). K-FAC incurs the highest footprint; AdaMuon reduces memory substantially; first-order baselines remain minimal.}
+    \label{fig:optimizer_vs_memory_usage}
+  \end{minipage}\hfill
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{optimizer_vs_gpu.png}
+    \captionof{figure}{GPU memory usage across epochs. K-FAC sustains the highest plateau; AdaMuon remains flat at mid-level; SGD/AdamW remain lowest.}
+    \label{fig:optimizer_vs_gpu}
+  \end{minipage}
+
+  \vspace{0.8em}
+
+  % ---------- Fila 2 ----------
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{optimizer_vs_time.png}
+    \captionof{figure}{Mean time per iteration. K-FAC pays in factor math; AdaMuon in the optimizer step; SGD/AdamW are cheapest overall.}
+    \label{fig:optimizer_vs_time}
+    
+  \end{minipage}\hfill
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{optimizer_vs_accuracy.png}
+    \captionof{figure}{Memory--accuracy trade-off. AdamW and AdaMuon lie on the Pareto frontier; K-FAC attains high accuracy at high memory; SGD is memory-light but accuracy-poor.}
+    \label{fig:optimizer_vs_accuracy}
+  \end{minipage}
+
+  \vspace{0.8em}
+
+  % ---------- Fila 3 (una sola, centrada) ----------
+  \begin{minipage}[t]{0.72\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{epoch_vs_accuracy.png}
+    \captionof{figure}{Validation accuracy vs.\ epochs. AdamW converges fastest; AdaMuon stabilizes later with similar accuracy; K-FAC shows variability; SGD peaks early and degrades.}
+    \label{fig:epoch_vs_accuracy}
+  \end{minipage}
+
+\end{figure}
+
+
+\section{Discussion}
+
+This study provided a rigorous theoretical and empirical comparison of two second-order optimization strategies for CNNs: Kronecker-Factored Approximate Curvature (K-FAC) and AdaMuon. Our analysis considered their mathematical underpinnings, computational complexity, and performance on image classification with ResNet-18 on the Oxford–IIIT Pet dataset.
+
+\subsubsection*{Mathematical trade-offs}
+From a theoretical standpoint, K-FAC explicitly approximates the natural gradient by factorizing the Fisher information matrix into Kronecker products $A \otimes G$. When this factorization is accurate, the resulting updates closely align with the natural gradient, enabling potentially faster convergence in terms of iteration count. However, its dominant cost arises from cubic matrix inversions per layer, amortized over $T_{\text{inv}}$ iterations, which scales poorly with increasing layer dimensionality. In contrast, AdaMuon replaces cubic inversions with block-wise orthogonalization and RMS-aligned rescaling. Its cost grows quadratically with block size, making it substantially cheaper for large layers (e.g., $d=1024$ where $O(d^3)/O(d^2) \approx 10^3$). Thus, even if K-FAC yields more informative steps per iteration, AdaMuon can achieve greater reduction in loss per unit of wall-clock time by avoiding cubic overheads.
+
+\subsubsection*{Empirical performance}
+The carried experiments confirmed these theoretical expectations. K-FAC achieved strong peak validation accuracy ($0.9987 \pm 0.0031$) but incurred the largest computational overhead, with iteration times averaging $180$\,ms and peak memory consumption of $24.5 \pm 4.9$\,GB. AdaMuon matched the best accuracy ($1.0000$ at peak; final $0.9926 \pm 0.0061$) while reducing peak memory to $14.0 \pm 1.2$\,GB and total training time to $1.1 \pm 0.4$ minutes, compared to $1.7 \pm 0.5$ minutes for K-FAC. AdamW remained the strongest first-order baseline, delivering perfect accuracy ($1.0000$) with minimal resource usage, whereas SGD was fastest per iteration ($\sim$82\,ms) but significantly underperformed in accuracy (final $0.4048 \pm 0.0552$). Statistical tests confirmed that all advanced methods (AdamW, K-FAC, AdaMuon) significantly outperformed SGD, while differences among them were not statistically significant.
+
+\subsubsection*{Interpretation and practical implications}
+The results demonstrate that AdaMuon provides a more favorable efficiency–accuracy trade-off under large-layer, single-GPU conditions. Its quadratic per-block complexity explains its empirical advantages in both speed and memory, while K-FAC remains limited by the scalability of factor construction and inversion. Nevertheless, K-FAC retains theoretical appeal in regimes with smaller layer dimensions or when its Kronecker factorization is highly accurate and amortization of inversions is feasible. AdaMuon, on the other hand, offers robustness, adaptivity, and near–first-order cost profiles, positioning it as a practical alternative for real-world CNN training workloads.
+
+\subsubsection*{Limitations and future work}
+This study is limited to ResNet-18 on a medium-scale dataset and single-GPU training. Further research should evaluate these methods on larger architectures (e.g., transformers or deeper CNNs), multi-GPU and distributed settings, and across diverse datasets. Additionally, sensitivity analyses of hyperparameters such as damping (K-FAC) and block size (AdaMuon) would provide deeper insights into stability and generalization behavior.
+
+\section{Conclusion}
+Overall, the combined mathematical derivations and empirical findings converge to a consistent conclusion: \textbf{AdaMuon achieves superior efficiency in practice by avoiding cubic matrix inversions, while preserving second-order benefits through adaptive moments and block-wise orthogonalization}. K-FAC remains valuable for its principled approximation of the natural gradient but is constrained by scalability. AdaMuon therefore emerges as a practical and scalable second-order optimizer that balances theoretical grounding with efficiency, making it a compelling alternative for modern deep learning tasks.
+
+
+
+\begin{thebibliography}{10}
+
+\bibitem{maslej2025}
+Nestor Maslej et al.,  
+\textit{Artificial Intelligence Index Report 2025},  
+arXiv (Cornell University), April 2025.  
+\doi{10.48550/arxiv.2504.07139}, \url{https://doi.org/10.48550/arxiv.2504.07139}.
+
+\bibitem{patel2025}
+Suyash Patel,  
+\textit{Global AI Tool Adoption Across Industries: A Comprehensive Analysis of Trends and Patterns (2023--2025)},  
+August 2025.  
+\doi{10.13140/RG.2.2.20656.06407}.
+
+\bibitem{alrajeh2025}
+Mariam Alrajeh and Aida Al-Samawi,  
+\textit{Deepfake image classification using decision (Binary) tree deep learning},  
+Journal of Sensor and Actuator Networks, vol. 14, no. 2, p. 40, 2025.  
+\doi{10.3390/jsan14020040}, \url{https://doi.org/10.3390/jsan14020040}.
+
+\bibitem{chen2021}
+Leiyu Chen, Shaobo Li, Qiang Bai, Jing Yang, Sanlong Jiang, and Yanming Miao,  
+\textit{Review of image classification algorithms based on convolutional neural networks},  
+Remote Sensing, vol. 13, no. 22, p. 4712, 2021.  
+\doi{10.3390/rs13224712}, \url{https://doi.org/10.3390/rs13224712}.
+
+\bibitem{elngar2021}
+Ahmed A. Elngar, Mohamed Arafa, Amar Fathy, Basma Moustafa, Omar Mahmoud, Mohamed Shaban, and Nehal Fawzy,  
+\textit{Image classification based on CNN: a survey},  
+Journal of Cybersecurity and Information Management, pp. 18--50, 2021.  
+\doi{10.54216/jcim.060102}, \url{https://doi.org/10.54216/jcim.060102}.
+
+\bibitem{ersavas2024}
+T. Ersavas, M. A. Smith, and J. S. Mattick,  
+\textit{Novel applications of Convolutional Neural Networks in the age of Transformers},  
+Scientific Reports, vol. 14, no. 1, p. 10000, 2024.  
+\doi{10.1038/s41598-024-60709-z}, \url{https://doi.org/10.1038/s41598-024-60709-z}.
+
+\bibitem{Dubey2019}
+Dubey, S., Chakraborty, S., Roy, S., Mukherjee, S., Singh, S., Chaudhuri, B.: 
+diffGrad: An Optimization Method for Convolutional Neural Networks. 
+IEEE Transactions on Neural Networks and Learning Systems \textbf{31}, 4500--4511 (2019). 
+\doi{10.1109/TNNLS.2019.2955777}
+
+\bibitem{Reyad2023}
+Reyad, M., Sarhan, A., Arafa, M.: 
+A modified Adam algorithm for deep neural network optimization. 
+Neural Computing and Applications \textbf{35}, 17095--17112 (2023). 
+\doi{10.1007/s00521-023-08568-z}
+
+\bibitem{Habib2020}
+Habib, G., Qureshi, S.: 
+Optimization and acceleration of convolutional neural networks: A survey. 
+Journal of King Saud University - Computer and Information Sciences \textbf{34}, 4244--4268 (2020). 
+\doi{10.1016/j.jksuci.2020.10.004}
+
+\bibitem{Gasse2019}
+Gasse, M., Ch{\'e}telat, D., Ferroni, N., Charlin, L., Lodi, A.: 
+Exact Combinatorial Optimization with Graph Convolutional Neural Networks. 
+In: Advances in Neural Information Processing Systems (NeurIPS), pp. 15554--15566 (2019).
+
+\bibitem{Cong2022}
+Cong, S., Zhou, Y.: 
+A review of convolutional neural network architectures and their optimizations. 
+Artificial Intelligence Review \textbf{56}, 1905--1969 (2022). 
+\doi{10.1007/s10462-022-10213-5}
+
+\bibitem{kingma2014}
+Diederik P. Kingma and Jimmy Lei Ba,  
+\textit{Adam: A method for stochastic optimization},  
+arXiv preprint, 2014.  
+\doi{10.48550/arxiv.1412.6980}, \url{https://arxiv.org/abs/1412.6980}.
+
+\bibitem{martens2015}
+James Martens and Roger Grosse,  
+\textit{Optimizing Neural Networks with Kronecker-factored Approximate Curvature},  
+Proceedings of the 32nd International Conference on Machine Learning (ICML), 2015.  
+\url{https://proceedings.mlr.press/v37/martens15.html}.
+
+\bibitem{si2025}
+Chongjie Si, Debing Zhang, and Wei Shen,  
+\textit{AdaMuon: Adaptive Muon Optimizer},  
+arXiv preprint, 2025.  
+\url{https://doi.org/10.48550/arXiv.2507.11005}.
+
+\bibitem{kaul2022}
+Piyush Kaul and Brejesh Lall,  
+\textit{Projective Fisher information for natural gradient descent},  
+IEEE Transactions on Artificial Intelligence, vol. 4, no. 2, pp. 304--314, 2022.  
+\doi{10.1109/tai.2022.3153593}, \url{https://doi.org/10.1109/tai.2022.3153593}.
+\bibitem{prince2023understanding}
+Simon J.D. Prince,
+\textit{Understanding Deep Learning},
+The MIT Press, 2023,
+\url{http://udlbook.com}.
+
+\bibitem{Haji2021}
+Haji, S.H., Abdulazeez, A.M.: Comparison of optimization techniques based on gradient descent algorithm: A review. 
+PalArch’s Journal of Archaeology of Egypt/Egyptology \textbf{18}(4), 2715--2743 (2021). 
+
+\end{thebibliography}
+
+\vspace{12pt}
+
+\end{document}
