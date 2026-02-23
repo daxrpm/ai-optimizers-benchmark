@@ -50,14 +50,40 @@ class KFACFactor:
 
         damped = self.cov + damping * torch.eye(self.shape, device=self.device)
 
+        # 1. Try Cholesky (fastest, requires strict positive definiteness)
         try:
             L = torch.linalg.cholesky(damped)
             self.inv = torch.cholesky_inverse(L)
+            return
         except torch.linalg.LinAlgError:
-            # Fallback to eigendecomposition for numerically difficult cases
+            pass
+
+        # 2. Try symmetric eigendecomposition (handles ill-conditioned positive semi-definite)
+        try:
             eigvals, eigvecs = torch.linalg.eigh(damped)
-            eigvals = eigvals.clamp(min=1e-10)
+            # Clamp eigenvalues to strictly positive to force positive definiteness
+            eigvals = eigvals.clamp(min=1e-8)
             self.inv = eigvecs @ torch.diag(1.0 / eigvals) @ eigvecs.t()
+            return
+        except torch.linalg.LinAlgError:
+            pass
+            
+        # 3. Try adding jitter and re-running eigendecomposition
+        try:
+            jitter = 1e-4 * torch.eye(self.shape, device=self.device)
+            eigvals, eigvecs = torch.linalg.eigh(damped + jitter)
+            eigvals = eigvals.clamp(min=1e-8)
+            self.inv = eigvecs @ torch.diag(1.0 / eigvals) @ eigvecs.t()
+            return
+        except torch.linalg.LinAlgError:
+            pass
+
+        # 4. Final fallback: Pseudo-inverse (slowest but most robust)
+        try:
+            self.inv = torch.linalg.pinv(damped)
+        except Exception:
+            # If all else fails, just use scaled identity to prevent crashing
+            self.inv = torch.eye(self.shape, device=self.device) / damping
 
 
 class KFACLayer:
