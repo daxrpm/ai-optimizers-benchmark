@@ -16,7 +16,7 @@ nohup bash scripts/run_all.sh results/ 8  2>&1 | tee benchmark.log &
 # The "8" is the number of GPUs — adjust for your setup
 ```
 
-## Monitor Progress (While AFK)
+## Monitor Progress 
 
 ```bash
 # Live log output
