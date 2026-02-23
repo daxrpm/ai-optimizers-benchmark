@@ -46,7 +46,7 @@ def get_system_info(device: torch.device) -> dict:
             "cuda_version": torch.version.cuda,
             "cudnn_version": str(torch.backends.cudnn.version()),
             "gpu_name": torch.cuda.get_device_name(idx),
-            "gpu_memory_total_mb": torch.cuda.get_device_properties(idx).total_mem / 1e6,
+            "gpu_memory_total_mb": torch.cuda.get_device_properties(idx).total_memory / 1e6,
             "gpu_count": torch.cuda.device_count(),
         })
     return info
