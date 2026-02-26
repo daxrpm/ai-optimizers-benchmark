@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader, TensorDataset
 from sklearn.datasets import fetch_openml, fetch_covtype
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, LabelEncoder
+from src.datasets.image_datasets import _safe_num_workers
 
 
 def get_adult(
@@ -35,7 +36,11 @@ def get_adult(
     X_processed = []
     for col in X.columns:
         if X[col].dtype == "object" or X[col].dtype.name == "category":
-            dummies = np.eye(X[col].nunique())[LabelEncoder().fit_transform(X[col].fillna("missing"))]
+            # Convert to object to avoid Categorical fillna issues
+            col_data = X[col].astype(object).fillna("missing")
+            le_col = LabelEncoder()
+            encoded = le_col.fit_transform(col_data)
+            dummies = np.eye(len(le_col.classes_))[encoded]
             X_processed.append(dummies)
         else:
             vals = X[col].fillna(0).values.astype(np.float32).reshape(-1, 1)
@@ -65,6 +70,7 @@ def get_adult(
     val_ds = TensorDataset(torch.tensor(X_val, dtype=torch.float32), torch.tensor(y_val, dtype=torch.long))
     test_ds = TensorDataset(torch.tensor(X_test, dtype=torch.float32), torch.tensor(y_test, dtype=torch.long))
 
+    num_workers = _safe_num_workers(num_workers)
     train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
     val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
     test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
@@ -111,6 +117,7 @@ def get_covertype(
     val_ds = TensorDataset(torch.tensor(X_val, dtype=torch.float32), torch.tensor(y_val, dtype=torch.long))
     test_ds = TensorDataset(torch.tensor(X_test, dtype=torch.float32), torch.tensor(y_test, dtype=torch.long))
 
+    num_workers = _safe_num_workers(num_workers)
     train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
     val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
     test_loader = DataLoader(test_ds, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)

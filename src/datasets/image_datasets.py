@@ -1,10 +1,27 @@
 """Image dataset loaders with standard augmentations for benchmarking."""
 
+import os
 from typing import Optional
 import torch
 from torch.utils.data import DataLoader, random_split
 import torchvision
 import torchvision.transforms as T
+
+
+def _safe_num_workers(requested: int) -> int:
+    """Reduce num_workers to 0 if shared memory is too small (e.g. Docker containers)."""
+    if requested == 0:
+        return 0
+    try:
+        shm_stats = os.statvfs('/dev/shm')
+        shm_size_mb = (shm_stats.f_frsize * shm_stats.f_blocks) / (1024 * 1024)
+        if shm_size_mb < 512:
+            print(f"WARNING: /dev/shm is only {shm_size_mb:.0f}MB. Setting num_workers=0 to avoid bus errors.")
+            return 0
+    except (OSError, FileNotFoundError):
+        print("WARNING: Cannot check /dev/shm. Setting num_workers=0 to be safe.")
+        return 0
+    return requested
 
 
 # Standard normalization constants
@@ -48,6 +65,7 @@ def get_fashion_mnist(
     # Override val set transform to test transform
     val_set.dataset = torchvision.datasets.FashionMNIST(data_dir, train=True, download=True, transform=transform_test)
 
+    num_workers = _safe_num_workers(num_workers)
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True, persistent_workers=num_workers > 0)
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True, persistent_workers=num_workers > 0)
     test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True, persistent_workers=num_workers > 0)
@@ -84,6 +102,7 @@ def get_cifar10(
 
     val_set.dataset = torchvision.datasets.CIFAR10(data_dir, train=True, download=True, transform=transform_test)
 
+    num_workers = _safe_num_workers(num_workers)
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True, persistent_workers=num_workers > 0)
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True, persistent_workers=num_workers > 0)
     test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True, persistent_workers=num_workers > 0)
@@ -120,6 +139,7 @@ def get_cifar100(
 
     val_set.dataset = torchvision.datasets.CIFAR100(data_dir, train=True, download=True, transform=transform_test)
 
+    num_workers = _safe_num_workers(num_workers)
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True, persistent_workers=num_workers > 0)
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True, persistent_workers=num_workers > 0)
     test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True, persistent_workers=num_workers > 0)
@@ -155,6 +175,7 @@ def get_svhn(
 
     val_set.dataset = torchvision.datasets.SVHN(data_dir, split="train", download=True, transform=transform_test)
 
+    num_workers = _safe_num_workers(num_workers)
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True, persistent_workers=num_workers > 0)
     val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True, persistent_workers=num_workers > 0)
     test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True, persistent_workers=num_workers > 0)
