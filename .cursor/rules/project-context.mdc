@@ -478,7 +478,7 @@ That is, for this layer, direct (cubic) inversion costs roughly $10^3$ times mor
 \end{itemize}
 
 \subsection{Empirical Comparative Cost Analysis}
-This study employed a controlled computational experiment to compare first-order and second-order optimization algorithms in deep learning training. The independent variable was the optimization method, including Adam, AdaMuon, and K-FAC, while network architecture, data preprocessing, hardware configuration, and training protocol were held constantly across comparisons. Experiments were conducted on numerical, image, and categorical datasets using multiple neural network architectures. The main outcome measures were per-iteration computational cost, peak memory usage, convergence dynamics, and final classification accuracy.
+This study employed a controlled computational experiment to compare first-order and second-order optimization algorithms in deep learning training. The experimental design and workload selection were strictly modeled after established benchmarking methodologies, specifically the MLCommons Algorithmic Efficiency (AlgoPerf) benchmark \cite{mlcommons2023} and the Deep Learning Optimizer Benchmark Suite (DeepOBS) \cite{schneider2018deepobs}. Following these formal paradigms, the independent variable was the optimization method, including Adam, AdaMuon, and K-FAC, while network architecture, data preprocessing, hardware configuration, and training protocol were uniformly standardized across comparisons. To evaluate the generalizability and robustness of the optimizers under realistic constraints, experiments were conducted on numerical, image, and categorical datasets using multiple neural network architectures ranging from multi-layer perceptrons \textit{(MLPs)} to deep residual networks \textit{(ResNets)}. The main outcome measures were per-iteration computational cost, peak memory usage, convergence dynamics, and final classification accuracy.
 
 \begin{table}[!b]
 \caption{Dataset–Model Configurations Used in the Benchmark}
@@ -486,15 +486,15 @@ This study employed a controlled computational experiment to compare first-order
 \centering
 \setlength{\tabcolsep}{6pt}
 \renewcommand{\arraystretch}{1.1}
-\begin{tabular}{|l|l|c|l}
+\begin{tabular}{|l|l|c|r|}
 \hline
 \textbf{Dataset} & \textbf{Model} & \textbf{Epochs} & \textbf{Parameters} \\ \hline
-UCI Adult        & MLP (256--128--64) & 40 \\ \hline
-Covertype        & MLP (512--256--128) & 100 \\ \hline
-CIFAR-10         & ResNet-18 & 100 \\ \hline
-CIFAR-100        & ResNet-34 & 80 \\ \hline
-Fashion-MNIST    & SimpleCNN & 50 \\ \hline
-SVHN             & Wide ResNet-16-4 & 50 \\ \hline
+UCI Adult        & MLP (256--128--64) & 40 & 70,082 \\ \hline
+Covertype        & MLP (512--256--128) & 100 & 195,079 \\ \hline
+CIFAR-10         & ResNet-18 & 100 & 11,173,962 \\ \hline
+CIFAR-100        & ResNet-34 & 80 & 21,328,292 \\ \hline
+Fashion-MNIST    & SimpleCNN & 50 & 857,738 \\ \hline
+SVHN             & Wide ResNet-16-4 & 50 & 2,748,890 \\ \hline
 \end{tabular}
 \end{table}
 
@@ -729,6 +729,18 @@ Piyush Kaul and Brejesh Lall,
 \textit{Projective Fisher information for natural gradient descent},  
 IEEE Transactions on Artificial Intelligence, vol. 4, no. 2, pp. 304--314, 2022.  
 DOI: 10.1109/tai.2022.3153593.
+
+\bibitem{schneider2018deepobs}
+Frank Schneider, Lukas Balles, and Philipp Hennig,
+\textit{DeepOBS: A Deep Learning Optimizer Benchmark Suite},
+International Conference on Learning Representations, 2019.
+URL: https://openreview.net/forum?id=rJg6ssC5Y7
+
+\bibitem{mlcommons2023}
+George E. Dahl et al.,
+\textit{Benchmarking Neural Network Training Algorithms},
+arXiv preprint arXiv:2306.07179, 2023.
+URL: https://arxiv.org/abs/2306.07179
 \end{thebibliography}
 
 \vspace{12pt}
